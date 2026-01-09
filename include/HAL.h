@@ -24,6 +24,7 @@ public:
     // Bar Control (Frets 1-4)
     // fretNum: 1 to 4. 0 = Release all bars.
     static void setGlobalFret(uint8_t fretNum);
+    static uint8_t getGlobalFret();
 
     // Plucker Control (Strings 0-5)
     static void pluckString(uint8_t stringIdx);
@@ -31,6 +32,10 @@ public:
 private:
     static IDriver* _driver;
     static uint8_t _currentBar; // Tracks which bar is currently down
+    
+    // Non-blocking Pluck State
+    static unsigned long _pluckTimers[6]; // When did the pluck start?
+    static bool _pluckActive[6];          // Is the servo currently in HIT position?
     
     // Helper to move servo
     static void moveServo(uint8_t channel, uint16_t value);

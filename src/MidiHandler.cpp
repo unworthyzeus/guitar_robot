@@ -1,11 +1,11 @@
 #include "MidiHandler.h"
 #include "HAL.h"
 #include "Config.h"
+#include "Tunings.h"
 #include <BLEMidi.h>
 
-// Standard Tuning reference (MIDI Note numbers)
-// E2=40, A2=45, D3=50, G3=55, B3=59, E4=64
-const uint8_t STRING_BASE_NOTES[6] = {40, 45, 50, 55, 59, 64};
+// Define statics
+TuningType TuningManager::currentTuning = TUNING_STANDARD;
 
 void MidiHandler::init() {
     BLEMidiServer.begin(MIDI_NAME);
@@ -21,25 +21,37 @@ void MidiHandler::loop() {
     // BLEMidi handles itself mostly in background/callbacks
 }
 
-// Simple Mapping: Returns String Index and Fret Number
-// Returns -1 in stringIndex if not found.
+// Smart Mapping: Tries to fit the note into the CURRENT Bar first.
 void mapNote(uint8_t note, int8_t* outString, int8_t* outFret) {
     *outString = -1;
     *outFret = 0;
 
-    // 1. Octave Folding (Fit into range)
     int tempNote = note;
     while (tempNote < 40) tempNote += 12;
     while (tempNote > 68) tempNote -= 12;
 
-    // 2. Find best string
-    // Strategy: Prefer frets 0-4.
+    const uint8_t* baseNotes = TuningManager::getBaseNotes();
+    
+    // 1. SMART CHECK: Can we play this on the CURRENT Bar?
+    // This prevents the bar from jumping if the note is available right here.
+    int8_t currentBar = HAL::getGlobalFret(); // We need to add this getter to HAL!
+    
     for (int s = 0; s < NUM_STRINGS; s++) {
-        int diff = tempNote - STRING_BASE_NOTES[s];
+        int diff = tempNote - baseNotes[s];
+        if (diff == currentBar) { // Perfect match for current bar!
+            *outString = s;
+            *outFret = diff;
+            return;
+        }
+    }
+
+    // 2. Standard Search (Find anywhere valid)
+    for (int s = 0; s < NUM_STRINGS; s++) {
+        int diff = tempNote - baseNotes[s];
         if (diff >= 0 && diff <= MAX_FRETS) {
             *outString = s;
             *outFret = diff;
-            return; // Take first validity
+            return; 
         }
     }
 }

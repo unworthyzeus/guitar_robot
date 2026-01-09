@@ -61,7 +61,21 @@ graph TD
 Aquest disseny utilitza el concepte de **"Cejilla Mòbil"**:
 *   **4 Motors per als Trasts**: Cada motor mou una barra que prem el Trast 1, 2, 3 o 4 de **totes les cordes alhora**.
 *   **6 Motors per a les pues**: Un per cada corda per fer-la sonar.
-*   **Limitació**: Totes les cordes que sonin han de fer-ho en el mateix trast (o a l'aire si cap barra està activa). És ideal per "Power Chords" o melodies simples, però no pot fer acords complexos amb dits a diferents trasts.
+
+## Estratègia Musical (Com tocar acords?)
+
+### ⚠️ La Limitació
+El sistema de barres rectes implica que **totes les notes actives han d'estar al mateix trast** (o a l'aire).
+*   Això fa **impossible** tocar acords oberts estàndards com el Do Major (C) o el Sol (G) amb afinació normal (EADGBE), ja que requereixen dits en trasts diferents (0, 1, 2, 3...) alhora.
+
+### ✅ La Solució: Afinació Oberta (Open Tuning)
+Per treure el màxim partit al robot, es recomana canviar l'afinació de la guitarra a **Open E** o **Open G**.
+En una afinació oberta, tocar totes les cordes a l'aire ja fa un acord major.
+*   **Barra Aixecada (0)**: Acord Base (Ex: Mi Major).
+*   **Barra Trast 1**: Acord Fa Major.
+*   **Barra Trast 2**: Acord Fa# Major.
+
+Així pots tocar cançons senceres només movent la barra amunt i avall!
 
 ## Muntatge del Hardware
 
@@ -109,3 +123,13 @@ graph TD
 
 # Disseny 3D
 ![alt text](image.png)
+
+## 🌐 Configuració WiFi i Afinació
+
+El robot crea el seu propi punt d'accés WiFi per configurar-lo sense cables.
+
+1.  Connecta't amb el mòbil/portàtil a la WiFi **GuitarBot_Setup**.
+2.  La contrasenya és: **12345678**.
+3.  Obre el navegador i ves a: **http://192.168.4.1**
+
+Des d'allà podràs canviar en temps real entre **Standard**, **Open E**, **Open G**, etc. sense haver de tornar a carregar el codi.

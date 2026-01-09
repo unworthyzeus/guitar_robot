@@ -23,6 +23,11 @@ public:
 // Static Members
 IDriver* HAL::_driver = nullptr;
 uint8_t HAL::_currentBar = 0;
+unsigned long HAL::_pluckTimers[6] = {0};
+bool HAL::_pluckActive[6] = {false};
+
+// Config for actuation duration
+#define PLUCK_DURATION_MS 100 
 
 void HAL::init() {
     static PCA9685Driver pca(PCA_ADDR);
@@ -33,11 +38,23 @@ void HAL::init() {
     setGlobalFret(0); // Lift all bars
     for(int i=0; i<NUM_STRINGS; i++) {
         moveServo(i, PLUCK_REST); // Center pluckers
+        _pluckActive[i] = false;
     }
 }
 
 void HAL::loop() {
-    // If we need non-blocking movement logic later (e.g. slow moves), add here
+    // Non-blocking logic: Check if we need to retract any plucker
+    unsigned long now = millis();
+    
+    for(int i=0; i<NUM_STRINGS; i++) {
+        if (_pluckActive[i]) {
+            if (now - _pluckTimers[i] >= PLUCK_DURATION_MS) {
+                // Time's up! Return to rest.
+                moveServo(i, PLUCK_REST);
+                _pluckActive[i] = false;
+            }
+        }
+    }
 }
 
 void HAL::moveServo(uint8_t channel, uint16_t value) {
@@ -70,14 +87,20 @@ void HAL::setGlobalFret(uint8_t fretNum) {
     _currentBar = fretNum;
 }
 
+uint8_t HAL::getGlobalFret() {
+    return _currentBar;
+}
+
 void HAL::pluckString(uint8_t stringIdx) {
     if (stringIdx >= NUM_STRINGS) return;
     
-    // Pluck Logic: Center -> Hit -> Center
-    // NOTE: This blocks for 100ms. In a real advanced RTOS code we wouldn't block,
-    // but for Arduino loop simple logic, it's safer to ensure full movement.
-    
+    // Non-blocking Pluck
+    // 1. Move to HIT
     moveServo(stringIdx, PLUCK_HIT);
-    delay(100); // Wait for hit
-    moveServo(stringIdx, PLUCK_REST); // Return
+    
+    // 2. Record Time
+    _pluckActive[stringIdx] = true;
+    _pluckTimers[stringIdx] = millis();
+    
+    // 3. Return immediately! (Retraction happens in loop())
 }

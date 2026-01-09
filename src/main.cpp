@@ -2,6 +2,7 @@
 #include "Config.h"
 #include "HAL.h"
 #include "MidiHandler.h"
+#include "WebUI.h"
 
 void setup() {
     Serial.begin(115200);
@@ -12,13 +13,16 @@ void setup() {
 
     Serial.println("Initializing MIDI...");
     MidiHandler::init();
+    
+    Serial.println("Initializing WebUI...");
+    WebUI::init();
 
     Serial.println("Ready to Rock!");
 }
 
 void loop() {
     MidiHandler::loop();
-    HAL::update();
-    // In the future, actuator timing logic (non-blocking) goes here
+    HAL::loop();
+    WebUI::loop();
     delay(1); // Minimal delay
 }
