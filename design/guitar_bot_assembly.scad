@@ -3,8 +3,8 @@
     Use 'barre_unit.scad' and 'bridge_plucker.scad' for printing.
 */
 
-include <barre_unit.scad>
-include <bridge_plucker.scad>
+use <barre_unit.scad>
+use <bridge_plucker.scad>
 
 // Parameters need to match included files or be re-declared if those files are standalone.
 // For simplicity, we assume the included files provide modules.
