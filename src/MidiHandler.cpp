@@ -29,8 +29,26 @@ void mapNoteToString(uint8_t note, int8_t* outString, int8_t* outFret) {
     *outString = -1;
     *outFret = -1;
     
+    // 1. Octave Folding Logic
+    // Limit: Lowest Note = 40 (E2), Highest Note = 68 (E4 + 4 frets)
+    // We try to shift the note into the playable range [40, 68]
+    int tempNote = note;
+    
+    // If too low, shift UP
+    while (tempNote < 40) {
+        tempNote += 12;
+    }
+    // If too high, shift DOWN
+    while (tempNote > 68) {
+        tempNote -= 12;
+    }
+
+    // Double check: if after shifting it's still out (e.g. edge cases or if range < 12), we might skip.
+    // But our range is 28 semitones, so any note should fit.
+    
+    // 2. Map to String
     for (int s = 0; s < NUM_STRINGS; s++) {
-        int diff = note - STRING_BASE_NOTES[s];
+        int diff = tempNote - STRING_BASE_NOTES[s];
         if (diff >= 0 && diff <= MAX_FRETS) {
             *outString = s;
             *outFret = diff;
