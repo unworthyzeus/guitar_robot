@@ -108,4 +108,4 @@ graph TD
 
 
 # Disseny 3D
-![alt text](image-1.png)
+![alt text](image.png)

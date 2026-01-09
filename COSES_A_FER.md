@@ -15,8 +15,11 @@
   - Cables Jumper (Femella-Femella) per a l'ESP32.
 
 ### Actuadors
-- [ ] **10x Servos MG90S (Metal Gear)**.
+- [ ] **10x Servos MG90S (Metal Gear) - Versió 180º**.
+  - *Molt Important*: Han de ser de **180 graus (Posicionals)**.
+  - Els de 360 graus (rotació contínua) **NO** serveixen.
   - *Nota*: Compra'n 12-14 per tenir recanvis.
+  - *Nota2*: Han de ser petits per cabre-hi
 
 ### Ferreteria i Diversos
 - [ ] **Cargols M2 o M2.5** (per muntar els servos a les peces impreses).
