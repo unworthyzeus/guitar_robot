@@ -79,3 +79,8 @@ graph TD
     -   ...
     -   Corda 1 (E Agut) = Nota 64
 -   Si fas servir una altra afinació, modifica `STRING_BASE_NOTES` a l'arxiu [src/MidiHandler.cpp](file:///c:/AESS_Projectes/guitar_robot/src/MidiHandler.cpp).
+
+
+# Disseny actual en 3D (veure design)
+
+![alt text](image.png)
