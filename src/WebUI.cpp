@@ -6,11 +6,11 @@
 
 WebServer server(80);
 
-const char* html_page = R"(
+const char* html_page = R"raw(
 <!DOCTYPE html>
 <html>
 <head>
-    <title>GuitarBot Control</title>
+    <title>GuitarBot Command Center</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <style>
         body { font-family: sans-serif; text-align: center; background: #222; color: #fff; margin: 0; padding: 20px; }
@@ -65,7 +65,7 @@ const char* html_page = R"(
 
     <script>
         const chordMap = {
-            0: [], // Standard: No chords
+            0: [],
             1: [ {f:0, n:"E Major"}, {f:1, n:"F Major"}, {f:2, n:"F# Major"}, {f:3, n:"G Major"}, {f:4, n:"G# Major"} ],
             2: [ {f:0, n:"G Major"}, {f:2, n:"A Major"}, {f:4, n:"B Major"} ],
             3: [ {f:0, n:"D5 Power"}, {f:1, n:"Eb5 Power"}, {f:2, n:"E5 Power"}, {f:3, n:"F5 Power"}, {f:4, n:"F#5 Power"} ]
@@ -91,11 +91,12 @@ const char* html_page = R"(
         
         function updateButtons(tIdx) {
             const container = document.getElementById('chordContainer');
+            if(!container) return;
             container.innerHTML = "";
             const chords = chordMap[tIdx];
             
-            if (chords.length === 0) {
-                container.innerHTML = "<p style='color:#888'>No compatible chords for this tuning.</p>";
+            if (!chords || chords.length === 0) {
+                container.innerHTML = "<p style='color:#888'>No compatible chords.</p>";
                 return;
             }
 
@@ -117,7 +118,7 @@ const char* html_page = R"(
     </script>
 </body>
 </html>
-)";
+)raw";
 
 void handleRoot() {
     server.send(200, "text/html", html_page);
@@ -133,13 +134,9 @@ void handleSet() {
     }
 }
 
-// Quick manual test endpoints
 void handlePluck() {
     if (server.hasArg("s")) {
         int s = server.arg("s").toInt();
-        // Trigger via HAL directly
-        // Note: For real sound we might want to ensure the Bar is correct, 
-        // but for a raw motor test, direct HAL is better.
         HAL::pluckString(s);
         server.send(200, "text/plain", "Plucked");
     }
@@ -154,9 +151,8 @@ void handleBar() {
 }
 
 void WebUI::init() {
-    // Create Access Point
     WiFi.softAP("GuitarBot_Setup", "12345678");
-    Serial.println("WebUI: AP Started. IP: 192.168.4.1");
+    Serial.println("WebUI: AP Started at 192.168.4.1");
     
     server.on("/", handleRoot);
     server.on("/set", handleSet);
