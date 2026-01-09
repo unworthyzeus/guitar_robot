@@ -1,0 +1,9 @@
+.pio
+.vscode/.browserslistrc
+.vscode/extensions.json
+.vscode/launch.json
+.vscode/*.log
+.idea
+*.code-workspace
+build
+output
