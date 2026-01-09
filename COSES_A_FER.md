@@ -56,7 +56,9 @@ Tens els fitxers font a la carpeta `design/`. Utilitza OpenSCAD per generar els 
 
 2.  **Instal·lació al Mànec**:
     - [ ] Col·loca la **Unitat 1** sobre el Trast 1.
-    - [ ] Col·loca la **Unitat 2** sobre el Trast 2...
+    - [ ] Col·loca la **Unitat 2** sobre el Trast 2.
+    - [ ] Col·loca la **Unitat 3** sobre el Trast 3.
+    - [ ] Col·loca la **Unitat 4** sobre el Trast 4.
     - [ ] Assegura les abraçadores amb els cargols M3/M4, però sense escanyar la guitarra.
 
 3.  **Preparació Pesa Pont**:
