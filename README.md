@@ -1,6 +1,7 @@
-# Firmware Robot Guitarrista
+# Firmware Robot Guitarrista (Versió "Barra de Trasts")
 
 Firmware per a ESP32 per controlar un robot que toca la guitarra via MIDI per Bluetooth (BLE).
+**Aquesta versió utilitza una arquitectura simplificada de 10 motors (Barres de Trast).**
 
 ## Visió Global del Sistema
 
@@ -12,133 +13,99 @@ graph TD
 
     subgraph "2. Capa Software (ESP32)"
         BLE[("Bluetooth Stack")]
-        Logic["MidiHandler<br>(Plegament Octaves + Mapeig)"]
-        HAL["HAL<br>(Abstraccio Hardware)"]
-        Driver["I2C Driver<br>(Adafruit Lib)"]
+        Logic["MidiHandler<br>(Gestió de Barres i Pua)"]
+        HAL["HAL<br>(Control Servos)"]
+        Driver["I2C Driver"]
         
         DAW -.-> BLE
         BLE --> Logic
-        Logic -- "NoteOn" --> HAL
+        Logic -- "Activa Barra X" --> HAL
+        Logic -- "Colpeja Corda Y" --> HAL
         HAL -- "SetPWM" --> Driver
     end
 
     subgraph "3. Capa Electronica"
-        PSU["Font Alimentacio Externa<br>(5V/6A)"]
+        PSU["Font Alimentacio Externa<br>(5V/5A)"]
         Bus[("Bus I2C")]
-        PCA1["PCA9685 #1<br>(Cordes 1, 2, 3)"]
-        PCA2["PCA9685 #2<br>(Cordes 4, 5, 6)"]
+        PCA1["PCA9685 ÚNIC<br>(10 canals usats)"]
 
         Driver -- "SDA/SCL" --> Bus
-        Bus --> PCA1 & PCA2
-        PSU ====> PCA1 & PCA2
+        Bus --> PCA1
+        PSU ====> PCA1
     end
 
     subgraph "4. Capa Mecanica"
         direction TB
-        subgraph "Manec (Trasts)"
-            Fretters1["Actuadors Trasts<br>(Solenoides/Servos)"]
+        subgraph "Barres (Trasts)"
+            Bar1["Barra Trast 1"]
+            Bar2["Barra Trast 2"]
+            Bar3["Barra Trast 3"]
+            Bar4["Barra Trast 4"]
         end
         subgraph "Pont (Pua)"
-            Pluckers2["Actuadors Pua<br>(Solenoides rapids)"]
+            Pluckers["6x Actuadors Pua"]
         end
     end
 
     subgraph "5. Capa Fisica"
-        GuitarStrings["Cordes Guitarra"]
-        Acoustics[("So resultant")]
+        GuitarStrings["Guitarra"]
     end
 
-    PCA1 & PCA2 ====> Fretters1 & Pluckers2
-    Fretters1 -- "Prem la corda" --> GuitarStrings
-    Pluckers2 -- "Colpeja la corda" --> GuitarStrings
-    GuitarStrings --> Acoustics
+    PCA1 ====> Bar1 & Bar2 & Bar3 & Bar4
+    PCA1 ====> Pluckers
+    Bar1 & Bar2 & Bar3 & Bar4 -- "Prem TOTES les cordes" --> GuitarStrings
+    Pluckers -- "Colpeja corda individual" --> GuitarStrings
 ```
+
+## Arquitectura Simplificada (10 Motors)
+Aquest disseny utilitza el concepte de **"Cejilla Mòbil"**:
+*   **4 Motors per als Trasts**: Cada motor mou una barra que prem el Trast 1, 2, 3 o 4 de **totes les cordes alhora**.
+*   **6 Motors per a les pues**: Un per cada corda per fer-la sonar.
+*   **Limitació**: Totes les cordes que sonin han de fer-ho en el mateix trast (o a l'aire si cap barra està activa). És ideal per "Power Chords" o melodies simples, però no pot fer acords complexos amb dits a diferents trasts.
 
 ## Muntatge del Hardware
 
 1.  **Microcontrolador**: ESP32 DevKit.
-2.  **Controladors (Drivers)**: 2x plaques PCA9685 PWM (connectades via I2C).
-    -   **Controlador 1 (Adreça 0x40)**: Controla les Cordes 1, 2 i 3.
-    -   **Controlador 2 (Adreça 0x41)**: Controla les Cordes 4, 5 i 6.
-    -   *Nota*: Has de soldar el pont (jumper) d'adreça a a la segona placa PCA9685 per canviar-la de 0x40 a 0x41.
+2.  **Controlador**: **1x** Placa PCA9685 (Adreça 0x40 per defecte).
+3.  **Connexions PCA9685**:
+    -   **Canals 0-5**: Motors de Pua (Corda 1 a 6).
+    -   **Canals 6-9**: Motors de Barra (Trast 1 a 4).
 
-3.  **Esquema de connexió (Per Corda)**:
-    -   Cada grup de corda té 5 canals assignats:
-        -   Canal 0: **Pua/Dits** (Servo/Solenoide al pont)
-        -   Canal 1: **Trast 1**
-        -   Canal 2: **Trast 2**
-        -   Canal 3: **Trast 3**
-        -   Canal 4: **Trast 4**
-
-### Esquema Elèctric Detallat
+### Esquema Elèctric
 
 ```mermaid
 graph TD
     subgraph Power ["Font d'Alimentacio"]
-    PSU[Font 5V/6V Alt Amperatge]
+    PSU[Font 5V/5A]
     end
 
     subgraph Controller [Controlador]
     ESP32[ESP32 DevKit]
     ESP32 -- "SDA (21)" --> Bus_SDA
     ESP32 -- "SCL (22)" --> Bus_SCL
-    ESP32 -- "GND (Massa)" --> Common_GND
+    ESP32 -- "GND" --> Common_GND
     end
 
-    subgraph Driver1 ["Driver 1 (Adreca 0x40)"]
-    PCA1[PCA9685 #1]
-    Bus_SDA --> PCA1
-    Bus_SCL --> PCA1
-    Common_GND --> PCA1
-    PSU -- "V+ (Terminal de Power)" --> PCA1
-    PCA1 -- "Ch 0-4" --> String1[Actuadors Corda 1]
-    PCA1 -- "Ch 5-9" --> String2[Actuadors Corda 2]
-    PCA1 -- "Ch 10-14" --> String3[Actuadors Corda 3]
-    end
-
-    subgraph Driver2 ["Driver 2 (Adreca 0x41)"]
-    PCA2[PCA9685 #2]
-    Bus_SDA --> PCA2
-    Bus_SCL --> PCA2
-    Common_GND --> PCA2
-    PSU -- "V+ (Terminal de Power)" --> PCA2
-    PCA2 -- "Ch 0-4" --> String4[Actuadors Corda 4]
-    PCA2 -- "Ch 5-9" --> String5[Actuadors Corda 5]
-    PCA2 -- "Ch 10-14" --> String6[Actuadors Corda 6]
+    subgraph Driver ["PCA9685 (Adreça 0x40)"]
+    PCA[PCA9685]
+    Bus_SDA --> PCA
+    Bus_SCL --> PCA
+    Common_GND --> PCA
+    PSU -- "V+" --> PCA
+    PCA -- "Ch 0-5" --> Plucks[6x Servos Pua]
+    PCA -- "Ch 6-9" --> Bars[4x Servos Barra]
     end
 ```
 
-> [!WARNING]
-> **Alimentació Crítica**: No alimentis els Servos/Solenoides directament des de l'ESP32. Utilitza una font d'alimentació externa d'alt amperatge (5V o 6V, idealment 5A o més) connectada als terminals de cargol de les plaques PCA9685.
-
 ## Compilació i Càrrega
 
-1.  Obre aquesta carpeta a VS Code amb l'extensió **PlatformIO** instal·lada.
-2.  Fes clic a la icona de **Build** (cap d'alienígena -> Build).
-3.  Connecta l'ESP32 per USB i fes clic a **Upload**.
-
-## Ús
-
-1.  Engega l'ESP32.
-2.  Obre una App MIDI (p. ex. GarageBand a iOS, o "MIDI BLE Connect" a Android).
-3.  Busca dispositius Bluetooth. Hauries de veure **"GuitarBot_ESP32"**.
-4.  Connecta't.
-5.  Envia notes MIDI.
-    -   El sistema aplicarà **plegament d'octaves** automàticament si les notes estan fora del rang físic del robot.
-
-## Afinació
-
--   El mapa per defecte assumeix l'afinació estàndard de guitarra:
-    -   Corda 6 (E Greu) = Nota 40
-    -   ...
-    -   Corda 1 (E Agut) = Nota 64
--   Si fas servir una altra afinació, modifica `STRING_BASE_NOTES` a l'arxiu `src/MidiHandler.cpp`.
+1.  Obre la carpeta a VS Code (PlatformIO).
+2.  Build & Upload.
 
 ## Dependències
-
 - Adafruit PWM Servo Driver
 - BLE-MIDI
 
-## Disseny actual en 3D
 
-![Disseny](image.png)
+# Disseny 3D
+![alt text](image-1.png)
