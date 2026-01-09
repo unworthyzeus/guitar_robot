@@ -7,14 +7,14 @@ Firmware per a ESP32 per controlar un robot que toca la guitarra via MIDI per Bl
 ```mermaid
 graph TD
     subgraph "1. Capa Usuari"
-        DAW[/"App Mobil / DAW"\n(Envia MIDI via Bluetooth)/]
+        DAW["App Mobil / DAW<br>(Envia MIDI via Bluetooth)"]
     end
 
     subgraph "2. Capa Software (ESP32)"
         BLE[("Bluetooth Stack")]
-        Logic["MidiHandler\n(Plegament Octaves + Mapeig)"]
-        HAL["HAL\n(Abstraccio Hardware)"]
-        Driver["I2C Driver\n(Adafruit Lib)"]
+        Logic["MidiHandler<br>(Plegament Octaves + Mapeig)"]
+        HAL["HAL<br>(Abstraccio Hardware)"]
+        Driver["I2C Driver<br>(Adafruit Lib)"]
         
         DAW -.-> BLE
         BLE --> Logic
@@ -23,10 +23,10 @@ graph TD
     end
 
     subgraph "3. Capa Electronica"
-        PSU[/"Font Alimentacio Externa"\n(5V/6A)/]
+        PSU["Font Alimentacio Externa<br>(5V/6A)"]
         Bus[("Bus I2C")]
-        PCA1["PCA9685 #1\n(Cordes 1, 2, 3)"]
-        PCA2["PCA9685 #2\n(Cordes 4, 5, 6)"]
+        PCA1["PCA9685 #1<br>(Cordes 1, 2, 3)"]
+        PCA2["PCA9685 #2<br>(Cordes 4, 5, 6)"]
 
         Driver -- "SDA/SCL" --> Bus
         Bus --> PCA1 & PCA2
@@ -36,10 +36,10 @@ graph TD
     subgraph "4. Capa Mecanica"
         direction TB
         subgraph "Manec (Trasts)"
-            Fretters1["Actuadors Trasts\n(Solenoides/Servos)"]
+            Fretters1["Actuadors Trasts<br>(Solenoides/Servos)"]
         end
         subgraph "Pont (Pua)"
-            Pluckers2["Actuadors Pua\n(Solenoides rapids)"]
+            Pluckers2["Actuadors Pua<br>(Solenoides rapids)"]
         end
     end
 

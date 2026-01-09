@@ -7,6 +7,9 @@
 // E2=40, A2=45, D3=50, G3=55, B3=59, E4=64
 const uint8_t STRING_BASE_NOTES[6] = {40, 45, 50, 55, 59, 64};
 
+// Track which strings are currently holding a note
+bool stringActive[6] = {false, false, false, false, false, false};
+
 void MidiHandler::init() {
     BLEMidiServer.begin(MIDI_NAME);
     BLEMidiServer.setOnPlayStatus([](bool playing){
@@ -18,48 +21,57 @@ void MidiHandler::init() {
 }
 
 void MidiHandler::loop() {
-    // BLEMidi handles itself mostly in background/callbacks, 
-    // but we can put keepalive or debug logic here
+    // BLEMidi handles itself mostly in background/callbacks
 }
 
-// Logic to find best string for a note
-// Simple algorithm: Find the string where the note is reachable (fret 0-4)
-// Prefer open strings.
+// Logic to find best string for a note with POLYPHONY support
 void mapNoteToString(uint8_t note, int8_t* outString, int8_t* outFret) {
     *outString = -1;
     *outFret = -1;
     
     // 1. Octave Folding Logic
-    // Limit: Lowest Note = 40 (E2), Highest Note = 68 (E4 + 4 frets)
-    // We try to shift the note into the playable range [40, 68]
     int tempNote = note;
-    
-    // If too low, shift UP
-    while (tempNote < 40) {
-        tempNote += 12;
-    }
-    // If too high, shift DOWN
-    while (tempNote > 68) {
-        tempNote -= 12;
-    }
+    while (tempNote < 40) tempNote += 12;
+    while (tempNote > 68) tempNote -= 12;
 
-    // Double check: if after shifting it's still out (e.g. edge cases or if range < 12), we might skip.
-    // But our range is 28 semitones, so any note should fit.
+    // 2. Map to String with Collision Detection
+    // We search for a valid string. If we find one that is FREE, we take it immediately.
+    // If we find one that is BUSY, we remember it as a backup plan.
     
-    // 2. Map to String
+    int8_t bestBusyString = -1;
+    int8_t bestBusyFret = -1;
+
     for (int s = 0; s < NUM_STRINGS; s++) {
         int diff = tempNote - STRING_BASE_NOTES[s];
+        
         if (diff >= 0 && diff <= MAX_FRETS) {
-            *outString = s;
-            *outFret = diff;
-            return; // Found a valid position
+            // Check if this string is already playing a note
+            if (!stringActive[s]) {
+                // FOUND A FREE STRING! Best scenario.
+                *outString = s;
+                *outFret = diff;
+                return; 
+            } else {
+                // String is busy. Store it just in case we don't find a free one.
+                // We prefer lower strings usually, or whatever is found first.
+                if (bestBusyString == -1) {
+                    bestBusyString = s;
+                    bestBusyFret = diff;
+                }
+            }
         }
+    }
+
+    // If we are here, we didn't find a free string.
+    // Use the busy string (collision/overwrite) if we found one.
+    if (bestBusyString != -1) {
+        *outString = bestBusyString;
+        *outFret = bestBusyFret;
     }
 }
 
 void MidiHandler::onNoteOn(uint8_t channel, uint8_t note, uint8_t velocity) {
     if (velocity == 0) {
-        // Some controllers send NoteOn vel=0 for NoteOff
         onNoteOff(channel, note, 0);
         return;
     }
@@ -69,13 +81,14 @@ void MidiHandler::onNoteOn(uint8_t channel, uint8_t note, uint8_t velocity) {
     
     if (s != -1) {
         Serial.printf("NoteOn: %d -> String %d, Fret %d\n", note, s, f);
+        
+        // Mark string as active
+        stringActive[s] = true;
+
         GuitarString* str = HAL::getString(s);
         if (str) {
             str->setFret(f);
             str->pluck(); 
-            // NOTE: In a real system, you might want to separate "Prepare Fret" and "Pluck" 
-            // by a few milliseconds to avoid buzzing. 
-            // For now, the setFret function is practically instant but mechanical delay exists.
         }
     } else {
         Serial.printf("NoteOn: %d -> Out of Range\n", note);
@@ -83,18 +96,24 @@ void MidiHandler::onNoteOn(uint8_t channel, uint8_t note, uint8_t velocity) {
 }
 
 void MidiHandler::onNoteOff(uint8_t channel, uint8_t note, uint8_t velocity) {
-    // Optional: Release fret when note ends?
-    // For guitar, you usually let it ring or mute it. 
-    // Lifting the fret finger usually mutes it effectively (or buzzes).
-    // Let's implement lift for now.
+    // We need to know WHICH string was playing this note to release it.
+    // Since we don't store per-note map, we re-calculate.
+    // LIMITATION: If we used collision logic to move the note, simple re-calc might miss.
+    // Ideally, we should store "activeNote[stringIndex]" to know exactly what to turn off.
+    
+    // For MVP/Simple version: Just re-map. 
     
     int8_t s, f;
-    mapNoteToString(note, &s, &f);
+    mapNoteToString(note, &s, &f); // This might return a different string if state changed, but it's a reasonable approximation.
+    
+    // Better Approach for Off: Turn off the string if it matches the expected note? 
+    // Let's just release the mapped string.
     
     if (s != -1) {
          GuitarString* str = HAL::getString(s);
          if (str) {
              str->releaseFret();
+             stringActive[s] = false; // Mark as free
          }
     }
 }

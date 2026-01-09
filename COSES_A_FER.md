@@ -1,72 +1,91 @@
-# Coses a fer (Full de Ruta)
+# Coses a fer (Full de Ruta Detallat)
 
-Aquest document detalla els passos necessaris per completar el projecte, des de l'adquisició de materials fins a l'assemblatge final.
+Aquest document detalla exactament què necessites i com muntar-ho.
 
-## FASE 1: Adquisició de Material (Components Electrònics)
+## 1. LLISTA DE LA COMPRA (Material Exacte)
 
-L'objectiu és construir un sistema per a 6 cordes, amb 4 trasts actius per corda + 1 actuador de pua per corda.
-**Total Actuadors: 30** (5 per corda x 6 cordes).
+### Electrònica Principal
+- [ ] **1x ESP32 DevKit V1**: El cervell.
+- [ ] **2x Mòduls PCA9685**: Controladors de 16 canals PWM (Interfície I2C).
+  - *Important*: Necessites dos perquè tens 30 motors i una sola placa només en controla 16.
+- [ ] **1x Font d'Alimentació 5V 10A (o superior)**: 
+  - *Tipus recomanat*: Font commutada metàl·lica (tipus LED/Industrial) o "Power Brick" d'alta potència.
+  - *NO serveix*: Carregadors de mòbil (solen ser 2A, insuficient).
+- [ ] **1x Adaptador DC Femella amb bornes de cargol**: Per connectar els cables de la font fàcilment.
 
-- [ ] **Microcontrolador**:
-  - [ ] 1x ESP32 DevKit V1 (Cervell).
-  - [ ] 1x Cable Micro-USB (càrrega i dades).
+### Actuadors (Motors)
+- [ ] **30x Servos MG90S (Metal Gear)**:
+  - Necessaris 30 unitats instal·lades. Compra'n **35** per tenir recanvis.
+  - *Per què MG90S?*: Els engranatges metàl·lics aguanten la tensió de prémer la corda. Els SG90 (blaus) es trencaran de seguida.
 
-- [ ] **Controladors de Servos (Drivers)**:
-  - [ ] 2x Plaques **PCA9685** (Controlador PWM 16 canals I2C).
-    - *Nota*: Una controlarà les cordes 1-3, i l'altra les cordes 4-6.
-
-- [ ] **Actuadors (Servos)**:
-  - [ ] **Pack de 30x Servos MG90S** (Engranatges metàl·lics).
-    - *Recomanació*: Compra'n alguns de recanvi (p. ex. 35 unitats). Els SG90 (blaus de plàstic) no tenen prou força/durabilitat.
-
-- [ ] **Font d'Alimentació (CRÍTIC)**:
-  - [ ] 1x **Font d'Alimentació 5V de 10A (o superior)**.
-    - Els servos consumeixen molt en arrencar. L'USB de l'ordinador NO serveix.
-  - [ ] Jackson Femella o bornes per connectar els cables de la font a les plaques PCA9685.
-
-- [ ] **Material Divers**:
-  - [ ] Cables Jumper (Femella-Femella i Mascle-Femella).
-  - [ ] Cable elèctric de 0.5mm o 0.75mm per a l'alimentació principal.
+### Cablejat
+- [ ] **Cable Vermell i Negre Gruixut (18 AWG o 0.75mm²)**: Per portar els 5V 10A des de la font fins a les plaques PCA9685.
+- [ ] **Cables Jumper Dupont (Femella-Femella)**: Per connectar l'ESP32 a les plaques PCA.
+- [ ] **Estany i Soldador**: Per canviar l'adreça de la segona placa PCA.
 
 ---
 
-## FASE 2: Disseny i Impresió 3D
+## 2. MODIFICACIÓ DE HARDWARE (Abans de muntar)
 
-No intentis fer-ho tot de cop. Dissenya i valida per a UNA sola corda.
-
-### A. El Mecanisme de "Dit" (Trasts)
-- [ ] **Disseny del suport del servo**:
-  - [ ] Ha de permetre muntar els servos de forma compacta (alternats esquerra/dreta si cal per espai).
-  - [ ] Sistema de fixació al mànec (abraçadora ajustable).
-- [ ] **Punta del dit**:
-  - [ ] Dissenya una "peça final" que va al braç del servo.
-  - [ ] **Important**: Ha de tenir una superfície tova (TPU o goma enganxada) per prémer la corda sense relliscar ni fer soroll "clac".
-
-### B. El Mecanisme de Pua (Pont)
-- [ ] **Suport del pont**:
-  - [ ] S'ha de fixar al cos de la guitarra o al pont existent.
-- [ ] **Braç de la pua**:
-  - [ ] Braç que subjecti una pua real (flexible) o una pua impresa en 3D.
+### Preparar la placa PCA9685 núm. 2
+Perquè l'ESP32 pugui parlar amb dues plaques diferents, han de tenir "noms" (adreces) diferents.
+1.  Agafa UNA de les plaques PCA9685.
+2.  Busca els pads (gotetes d'estany) marcats com **A0** a la cantonada superior dreta.
+3.  Pos'hi una gota d'estany unnt els dos pads de **A0**.
+4.  Ara aquesta placa tindrà l'adreça `0x41` (l'altra sense soldar serà `0x40`).
 
 ---
 
-## FASE 3: Muntatge i Prototipatge (Iteració 1)
+## 3. LÒGICA DE CONNEXIÓ (Esquema Mental)
 
-1.  [ ] **Muntatge de prova (1 Corda)**:
-    - Munta només els 5 servos de la Corda 1.
-    - Connecta'ls al primer PCA9685.
-2.  [ ] **Connexió Elèctrica**:
-    - Connecta ESP32 -> PCA9685 (GND, SDA, SCL, 3.3V per lògica).
-    - Connecta Font Externa -> PCA9685 (Terminals verds V+ i GND).
-3.  [ ] **Test de Software**:
-    - Configura el codi per activar només la Corda 1.
-    - Ajusta els angles `SERVO_MIN` i `SERVO_MAX` a `Config.h` perquè premin la corda sense trencar res.
+No connectis els servos a l'ESP32 directament. Es cremarà.
+
+- **Dades (Control)**: ESP32 -> PCA9685
+  - ESP32 3V3 -> PCA VCC (Part lògica)
+  - ESP32 GND -> PCA GND
+  - ESP32 D21 -> PCA SDA
+  - ESP32 D22 -> PCA SCL
+  - *Connecta les dues PCA en cadena (mira els pins dels costats) o en paral·lel als mateixos pins de l'ESP32.*
+
+- **Potència (Força)**: Font 10A -> PCA9685
+  - Font V+ -> PCA Borna Verda V+
+  - Font GND -> PCA Borna Verda GND
+  - *Has de portar cable gruixut a les bornes verdes de LES DUES plaques.*
 
 ---
 
-## FASE 4: Producció Final
+## 4. ESTRUCTURA MECÀNICA (Què cal imprimir/dissenyar)
 
-- [ ] Imprimir les peces per a les 5 cordes restants.
-- [ ] Soldar el pont d'adreça (A0) a la segona placa PCA9685 (per tenir l'adreça 0x41).
-- [ ] Cablejat final i organització de cables (Cable management).
-- [ ] Afinació fina dels angles per a cada servo individualment.
+### A. Mòdul del Mànec (Trasts)
+Necessites construir 6 torres (una per corda). Cada torre porta 4 servos.
+- **Repte d'espai**: Els trasts estan molt junts. No pots posar 4 servos en línia recta un darrera l'altre tocant la fusta.
+- **Solució Suggerida**: Fes una estructura en "V" o alternada.
+  - Servo 1 (Trast 1): Muntat a l'esquerra del mànec.
+  - Servo 2 (Trast 2): Muntat a la dreta del mànec.
+  - Així els cossos dels motors no xoquen.
+
+### B. Mòdul del Pont (Pua/Dits)
+Necessites 6 servos alineats al pont.
+- Pots dissenyar un "Rail" únic que s'enganxi darrera el pont de la guitarra.
+- Cada servo mou un petit braç que "bufa" o colpeja la corda.
+
+---
+
+## 5. PAS A PAS PEL MUNTATGE
+
+1.  **Validació Unitària**:
+    - Connecta 1 sol servo a la placa `0x40`, canal 0.
+    - Carrega el codi.
+    - Envia una nota MIDI. Es mou? Perfecte.
+
+2.  **Validació de Potència**:
+    - Connecta 5 servos (una corda completa).
+    - Fes-los moure tots a la vegada. Si l'ESP32 es reinicia o el LED parpelleja, tens un problema amb la Font d'Alimentació.
+
+3.  **Instal·lació Mecànica**:
+    - Comença per la **Corda 1 (E agut)**. És la més fàcil de fer sonar.
+    - Munta els 4 servos de trasts i el de la pua.
+    - Calibra els angles al fitxer `Config.h` (SERVO_MIN, SERVO_MAX) perquè premin la corda just el necessari per fer nota neta (sense apagar el so per massa pressió).
+
+4.  **Escalar**:
+    - Un cop la Corda 1 funciona perfecte, repeteix per a les altres 5.
